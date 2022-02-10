@@ -1,6 +1,7 @@
 package com.qiezitv;
 
 import android.accessibilityservice.AccessibilityService;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.GestureDescription;
 import android.graphics.Path;
 import android.graphics.Rect;
@@ -8,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -22,16 +24,19 @@ import com.qiezitv.view.TsUtils;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 import yin.deng.normalutils.utils.DownTimer;
 import yin.deng.normalutils.utils.LogUtils;
+import yin.deng.normalutils.utils.MyUtils;
 
 public class AccessibilityAutoContactService extends AccessibilityService {
     public static final int DOING_TASK = -1;//准备开始
     public static final int NORMAL = 0;//准备开始
-    public static final int CLICK_TAB = 1;//点击好物tab
-    public static final int CLICK_SHOP_ITEM = 2;//点击抖音商城
+    public static final int CLICK_ME = 1;//点击我
+    public static final int CLICK_SHOP = 2;//点击抖音商城
     public static final int FIND_GOODS = 3;//寻找商品
     public static final int SCREEN_NEXT_PAGE = 4;//下滑下一页
     public static final int CLICK_GOODS = 5;//点击商品
@@ -48,9 +53,9 @@ public class AccessibilityAutoContactService extends AccessibilityService {
     private DownTimer timer;
     /**************版本更新只需修改此部分的6个id即可***********************/
     //视频发布的左下角音乐封面id
-    public String tabTag = "android:id/tabs";
-    public String shopItemTag = "com.ss.android.ugc.live:id/bqb";
-    public String activityCoverTag = "com.bytedance.android.shopping:id/iv_ec_activity_cover";
+    public String meTag = "com.ss.android.ugc.aweme:id/l5+";
+    public String shopTag = "com.ss.android.ugc.aweme:id/c55";
+    public String shopRootViewTag = "com.ss.android.ugc.aweme:id/root_view";
     public String tabbarClass = "com.bytedance.ies.xelement.viewpager.LynxTabBarView";
     public String tabClass = "com.bytedance.ies.xelement.viewpager.childitem.LynxTabbarItem";
     public String dollarClass = "com.lynx.tasm.behavior.ui.text.UIText";
@@ -102,25 +107,26 @@ public class AccessibilityAutoContactService extends AccessibilityService {
                 break;
             case NORMAL:
                 LogUtils.d("开始干活了，当前类型：" + nowState);
-                List<AccessibilityNodeInfo> tabNodes = findNodesById(tabTag);
-                if (isOk(tabNodes)) {
-                    AccessibilityNodeInfo meNodeParent = tabNodes.get(0);
-                    meNodeParent.getChild(1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    nowState = CLICK_TAB;
+                List<AccessibilityNodeInfo> meNodes = findNodesById(meTag);
+                if (isOk(meNodes)) {
+                    AccessibilityNodeInfo meNodeParent = meNodes.get(meNodes.size() - 1).getParent();
+                    meNodeParent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    nowState = CLICK_ME;
                 } else {
                     LogUtils.e("暂未找到`我`标签");
                 }
                 break;
-            case CLICK_TAB:
-                List<AccessibilityNodeInfo> shopNodes = findNodesById(shopItemTag);
+            case CLICK_ME:
+                List<AccessibilityNodeInfo> shopNodes = findNodesById(shopTag);
                 if (isOk(shopNodes)) {
-                    shopNodes.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    nowState = CLICK_SHOP_ITEM;
+                    AccessibilityNodeInfo shopNodeParent = shopNodes.get(0).getParent();
+                    shopNodeParent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    nowState = CLICK_SHOP;
                 } else {
                     LogUtils.e("暂未找到`抖音商城`标签");
                 }
                 break;
-            case CLICK_SHOP_ITEM:
+            case CLICK_SHOP:
                 if (isProcessClickTab) {
                     break;
                 }
@@ -205,8 +211,6 @@ public class AccessibilityAutoContactService extends AccessibilityService {
                 break;
         }
     }
-//    com.bytedance.android.shopping:id/iv_ec_activity_cover
-//    com.ss.android.ugc.live:id/a3h 闪购
 
     public void clickYundong() {
         List<AccessibilityNodeInfo> tabNodes = findNodesByClass(tabClass);
